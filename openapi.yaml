@@ -1,0 +1,207 @@
+openapi: "3.0.0"
+info:
+  title: "Hierarchy"
+  description: |
+    # A service for managing hierarchical structure
+    
+    ## Overview
+    This service provides an API for working with a set of items by forming an hierarchy. Hierarchy is represented by a collection of trees. Each item within a tree has a unique name and points to its parent ( which is 'null' in case of a root item). One can create, rename, move and delete items within the hierarchy.
+  version: "0.1.0"
+
+tags:
+  - name: "items"
+    description: "Operations with items"
+  - name: "trees"
+    description: "Operations with collection of items"
+  
+paths:
+  /item:
+    post:
+      tags:
+        - "items"
+      summary: "Create new item"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemData"
+      responses:
+        "201":
+          description: "Created"
+          headers:
+            Location:
+              description: "URL of the created item"
+              schema:
+                type: "string"
+        "400":
+          description: "Invalid parameters"
+    put:
+      tags:
+        - "items"
+      summary: "Replace an existing item"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Item"
+      responses:
+        "204":
+          description: "Successful replacement"
+        "400":
+          description: "Invalid parameters"
+        "404":
+          description: "Item not found"
+
+  /item/{item_id}:
+    get:
+      tags:
+        - "items"
+      summary: "Get item by ID"
+      parameters: 
+        - name: "item_id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "400":
+          description: "Invalid ID"
+        "404":
+          description: "Item not found"
+    patch:
+      tags:
+        - "items"
+      summary: "Partially update item"
+      parameters: 
+        - name: "item_id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartialItemData"
+      responses:
+        "204":
+          description: "Successful update"
+        "400":
+          description: "Invalid parameters"
+        "404":
+          description: "Item not found"
+    delete:
+      tags: 
+        - "items"
+      summary: "Delete item by ID"
+      parameters: 
+        - name: "item_id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "204":
+          description: "Successful deletion"
+        "400":
+          description: "Invalid ID"
+        "404":
+          description: "Item not found"
+        
+  /hierarchy:
+    get:
+      tags:
+        - "trees"
+      summary: "Get the whole hierarchy"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hierarchy"
+                
+  /subtree/{root_item_id}:
+    get:
+      tags:
+        - "trees"
+      summary: "Get subtree in which specified item is a root"
+      parameters: 
+        - name: "root_item_id"
+          in: "path"
+          description: "ID of the item which is a root for a requested subtree"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Node"
+        "400":
+          description: "Invalid ID"
+        "404":
+          description: "Item not found"
+
+components:
+  schemas:
+    PartialItemData:
+      type: "object"
+      description: "Data used to update an item"
+      properties:
+        name:
+          type: "string"
+        parent_id:
+          type: "integer"
+          nullable: true
+          description:  "ID of the parent item"
+    ItemData:
+      allOf:
+      - $ref: "#/components/schemas/PartialItemData"
+      - type: "object"
+        description: "Data used to create an item"
+        required: 
+          - "name"
+          - 'parent_id'
+    Item:
+      allOf:
+        - $ref: "#/components/schemas/ItemData"
+        - type: "object"
+          description: "Basic unit of information within the hierarchy"
+          properties:
+            id:
+              type: "integer"
+          required:
+            - "id"
+    Node:
+      allOf:
+        - $ref: "#/components/schemas/Item"
+        - type: "object"
+          description: "Extends Item by referencing its children and is used to form a tree structure"
+          properties:
+            children:
+              type: array
+              items:
+                $ref: "#/components/schemas/Node"
+          required:
+            - "children"
+    Hierarchy:
+      type: array
+      description: "Represents a collection of trees"
+      items:
+        $ref: "#/components/schemas/Node"
+        
+        
+      
+    

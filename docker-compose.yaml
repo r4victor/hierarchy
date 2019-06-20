@@ -1,0 +1,22 @@
+version: '3'
+services:
+  web:
+    build: .
+    image: r4victor/hierarchy
+    container_name: hierarchy
+    volumes:
+      - ./app:/usr/src/hierarchy/app
+    environment:
+      - FLASK_ENV
+      - FLASK_SECRET_KEY
+    ports:
+      - 8888:5000
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD
+    ports:
+      - 127.0.0.1:5432:5432
+
+    
