@@ -4,19 +4,28 @@ services:
     build: .
     image: r4victor/hierarchy
     container_name: hierarchy
+    depends_on:
+      - postgres
     volumes:
       - ./app:/usr/src/hierarchy/app
+      - ./tests:/usr/src/hierarchy/tests
     environment:
       - FLASK_ENV
       - FLASK_SECRET_KEY
+      - POSTGRES_PASSWORD
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_PORT=5432
     ports:
       - 8888:5000
   postgres:
     image: postgres
     restart: always
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD
     ports:
-      - 127.0.0.1:5432:5432
+      - 5432:5432
 
     
