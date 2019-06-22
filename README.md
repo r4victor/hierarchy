@@ -14,11 +14,20 @@ See OpenAPI specification: [app.swaggerhub.com](https://app.swaggerhub.com/apis-
 ### Setup
 
 1. Build image: `docker-compose build`
-2. Initialize database: `docker-compose run --service-ports web flask init-db`
+2. Set environment variables:
+```
+    export FLASK_ENV=production
+    export POSTGRES_PASSWORD=your_pass
+    export POSTGRES_USER=your_user
+    export POSTGRES_USER=your_db
+```
+3. Initialize database: `docker-compose run --service-ports web flask init-db`
 
 ### Running
 
-3. `docker-compose up -d`
+4. `docker-compose up -d`
+
+Visit http://localhost:8888/hierarchy
 
 ## Implementation details
 
