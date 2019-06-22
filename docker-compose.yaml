@@ -6,6 +6,7 @@ services:
     container_name: hierarchy
     depends_on:
       - postgres
+    restart: always
     volumes:
       - ./app:/usr/src/hierarchy/app
       - ./tests:/usr/src/hierarchy/tests
