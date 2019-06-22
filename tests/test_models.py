@@ -3,70 +3,7 @@ import pytest
 from app.db import get_db_conn
 from app.models import Node
 
-
-@pytest.fixture
-def example_tree():
-    return {
-        'id': 1,
-        'name': 'root',
-        'parent_id': None,
-        'children': [
-            {
-                'id': 2,
-                'name': 'level1-1',
-                'parent_id': 1,
-                'children': [
-                    {
-                        'id': 3,
-                        'name': 'level2-1',
-                        'parent_id': 2,
-                        'children': []
-                    },
-                    {
-                        'id': 4,
-                        'name': 'level2-2',
-                        'parent_id': 2,
-                        'children': []
-                    }
-                ]
-            },
-            {
-                'id': 5,
-                'name': 'level1-2',
-                'parent_id': 1,
-                'children': [
-                    {
-                        'id': 6,
-                        'name': 'level2-3',
-                        'parent_id': 5,
-                        'children': []
-                    }
-                ]
-            },
-            {
-                'id': 7,
-                'name': 'level1-3',
-                'parent_id': 1,
-                'children': []
-            }
-        ]
-    }
-
-
-def populate_table_with_example_rows():
-    values = [
-        ('level1-1', 1, 1, 6),
-        ('level2-1', 2, 2, 3),
-        ('level2-2', 2, 4, 5),
-        ('level1-2', 1, 7, 10),
-        ('level2-3', 5, 8, 9),
-        ('level1-3', 1, 11, 12),
-    ]
-    with get_db_conn().cursor() as cur:
-        for t in values:
-            cur.execute('INSERT INTO node (name, parent_id, lft, rgt) VALUES (%s, %s, %s, %s)', t)
-        cur.execute('UPDATE node SET rgt = 13 WHERE id = 1')
-    get_db_conn().commit()
+from tests.test_data import populate_table_with_example_rows, example_tree
 
 
 def test_root_node(app):
@@ -79,7 +16,7 @@ def test_root_node(app):
 
 def test_create_node(app):
     expected_root_node = Node(id=1, name='root', parent_id=None, lft=0, rgt=3)
-    expected_new_node = Node(id=2, name='new node', parent_id=1, lft=1, rgt=2)
+    expected_new_node = Node(id=2, name='new node', parent_id=1, lft=1, rgt=2, tree_id=2)
     with app.app_context():
         new_node = Node.create(expected_new_node.name, Node.get_by_id(expected_new_node.parent_id))
         assert new_node == Node.get_by_id(expected_new_node.id)
@@ -113,6 +50,41 @@ def test_move(app, example_tree):
         populate_table_with_example_rows()
         Node.get_by_id(5).move(Node.get_by_id(2))
         tree = Node.get_by_id(1).get_subtree()
-    assert tree == example_tree
+    
+    assert tree['children'] == example_tree['children']
+
+
+@pytest.mark.parametrize(
+    'name', ['Simple', 'немного harder', '234 234 444 ', 'path/to/something', 'try_underscores__']
+)
+def test_name_validation_valid(name):
+    try:
+        Node.validate_name(name)
+    except ValueError:
+        pytest.fail()
+
+
+@pytest.mark.parametrize(
+    'name', ['', ' ', '\t', '  ', ' 123', 're  re', '😀']
+)
+def test_name_validation_invalid(name):
+    with pytest.raises(ValueError):
+        Node.validate_name(name)
+
+
+def test_name_uniqueness_fail(app):
+    with app.app_context():
+        node = Node.create('Unique', Node.get_by_id(Node.get_root_id()))
+        with pytest.raises(ValueError):
+                Node.create('Unique', node)
+
+
+def test_name_uniqueness_accept(app):
+    with app.app_context():
+        Node.create('Unique', Node.get_by_id(Node.get_root_id()))
+        try:
+            Node.create('Unique', Node.get_by_id(Node.get_root_id()))
+        except ValueError:
+            pytest.fail()
 
         
