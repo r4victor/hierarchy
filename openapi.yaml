@@ -19,7 +19,7 @@ paths:
     post:
       tags:
         - "items"
-      summary: "Create new item"
+      summary: "Create a new item"
       requestBody:
         required: true
         content:
@@ -36,6 +36,10 @@ paths:
                 type: "string"
         "400":
           description: "Invalid parameters"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     put:
       tags:
         - "items"
@@ -47,24 +51,37 @@ paths:
             schema:
               $ref: "#/components/schemas/Item"
       responses:
-        "204":
+        "200":
           description: "Successful replacement"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
         "400":
           description: "Invalid parameters"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: "Item not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /item/{item_id}:
     get:
       tags:
         - "items"
-      summary: "Get item by ID"
+      summary: "Get an item by ID"
       parameters: 
         - name: "item_id"
           in: "path"
           required: true
           schema:
             type: "integer"
+            minimum: 1
       responses:
         "200":
           description: "OK"
@@ -72,20 +89,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Item"
-        "400":
-          description: "Invalid ID"
         "404":
           description: "Item not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     patch:
       tags:
         - "items"
-      summary: "Partially update item"
+      summary: "Update an item"
+      description: "All parameters not provided will be left unchanged"
       parameters: 
         - name: "item_id"
           in: "path"
           required: true
           schema:
             type: "integer"
+            minimum: 1
       requestBody:
         required: true
         content:
@@ -93,29 +114,44 @@ paths:
             schema:
               $ref: "#/components/schemas/PartialItemData"
       responses:
-        "204":
+        "200":
           description: "Successful update"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
         "400":
           description: "Invalid parameters"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: "Item not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     delete:
       tags: 
         - "items"
-      summary: "Delete item by ID"
+      summary: "Delete an item by ID"
       parameters: 
         - name: "item_id"
           in: "path"
           required: true
           schema:
             type: "integer"
+            minimum: 1
       responses:
         "204":
           description: "Successful deletion"
-        "400":
-          description: "Invalid ID"
         "404":
           description: "Item not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         
   /hierarchy:
     get:
@@ -138,10 +174,11 @@ paths:
       parameters: 
         - name: "root_item_id"
           in: "path"
-          description: "ID of the item which is a root for a requested subtree"
+          description: "ID of an item which is a root for a requested subtree"
           required: true
           schema:
             type: "integer"
+            minimum: 1
       responses:
         "200":
           description: "OK"
@@ -149,23 +186,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Node"
-        "400":
-          description: "Invalid ID"
         "404":
           description: "Item not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
   schemas:
+    Error:
+      type: "object"
+      properties:
+        message:
+          type: "string"
+          example: "Invalid parameters"
     PartialItemData:
       type: "object"
       description: "Data used to update an item"
       properties:
         name:
           type: "string"
+          description: "Should contain only latin or cyrillic symbols, digits, single spaces or any of: '_', '/', '\\'.\n Should not be empty or start with a space"
+          example: "Item"
         parent_id:
           type: "integer"
+          minimum: 1
           nullable: true
-          description:  "ID of the parent item"
+          example: 21
     ItemData:
       allOf:
       - $ref: "#/components/schemas/PartialItemData"
@@ -182,6 +230,8 @@ components:
           properties:
             id:
               type: "integer"
+              minimum: 1
+              example: 3
           required:
             - "id"
     Node:
@@ -194,6 +244,7 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/Node"
+              example: []
           required:
             - "children"
     Hierarchy:
@@ -201,7 +252,3 @@ components:
       description: "Represents a collection of trees"
       items:
         $ref: "#/components/schemas/Node"
-        
-        
-      
-    
