@@ -136,6 +136,7 @@ paths:
       tags: 
         - "items"
       summary: "Delete an item by ID"
+      description: "Deletes an item and all its children"
       parameters: 
         - name: "item_id"
           in: "path"
