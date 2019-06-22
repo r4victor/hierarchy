@@ -81,7 +81,7 @@ def test_create_node(app):
     expected_root_node = Node(id=1, name='root', parent_id=None, lft=0, rgt=3)
     expected_new_node = Node(id=2, name='new node', parent_id=1, lft=1, rgt=2)
     with app.app_context():
-        new_node = Node.create(expected_new_node.name, expected_new_node.parent_id)
+        new_node = Node.create(expected_new_node.name, Node.get_by_id(expected_new_node.parent_id))
         assert new_node == Node.get_by_id(expected_new_node.id)
         root_node = Node.get_by_id(expected_root_node.id)
 
@@ -111,7 +111,7 @@ def test_move(app, example_tree):
     example_tree['children'][0]['children'].append(subtree)
     with app.app_context():
         populate_table_with_example_rows()
-        Node.get_by_id(5).move(2)
+        Node.get_by_id(5).move(Node.get_by_id(2))
         tree = Node.get_by_id(1).get_subtree()
     assert tree == example_tree
 

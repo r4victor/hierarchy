@@ -11,6 +11,10 @@ class Node:
     lft: int
     rgt: int
 
+    @staticmethod
+    def get_root_id():
+        return 1
+
     @classmethod
     def _from_dict_cursor_result(cls, res):
         return cls(**res)
@@ -20,12 +24,13 @@ class Node:
         with get_db_conn().cursor() as cur:
             cur.execute('SELECT * FROM node WHERE id=%s', (id,))
             res = cur.fetchone()
+        if res is None:
+            return None
         return cls(**res)
 
     @classmethod
-    def create(cls, name, parent_id):
-        parent_node = cls.get_by_id(parent_id)
-        values = (name, parent_id, parent_node.rgt, parent_node.rgt + 1)
+    def create(cls, name, parent_node):
+        values = (name, parent_node.id, parent_node.rgt, parent_node.rgt + 1)
         with get_db_conn().cursor() as cur:
             cur.execute('UPDATE node SET rgt = rgt + 2 WHERE rgt >= %s', (parent_node.rgt,))
             cur.execute('UPDATE node SET lft = lft + 2 WHERE lft > %s', (parent_node.rgt,))
@@ -34,28 +39,33 @@ class Node:
         get_db_conn().commit()
         return cls(node_id, *values)
 
+    def to_item(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'parent_id': self.parent_id
+        }
+
     def rename(self, new_name):
         with get_db_conn().cursor() as cur:
             cur.execute('UPDATE node SET name = %s WHERE id = %s', (new_name, self.id))
         get_db_conn().commit()
         return replace(self, name=new_name)
 
-    def move(self, parent_id):
-        parent_node = self.get_by_id(parent_id)
+    def move(self, parent_node):
         if self.lft < parent_node.lft < self.rgt:
             raise ValueError('Cannot move under a child')
         with get_db_conn().cursor() as cur:
-            cur.execute('UPDATE node SET parent_id = %s WHERE id = %s', (parent_id, self.id))
+            cur.execute('UPDATE node SET parent_id = %s WHERE id = %s', (parent_node.id, self.id))
             # temporary remove subtree
             cur.execute('UPDATE node SET lft = -lft, rgt = -rgt WHERE lft BETWEEN %s AND %s', (self.lft, self.rgt))
-
-            cur.execute('UPDATE node SET rgt = rgt - %s WHERE lft > %s', (self._diff, self.rgt))
+            # shift left
+            cur.execute('UPDATE node SET rgt = rgt - %s WHERE rgt > %s', (self._diff, self.rgt))
             cur.execute('UPDATE node SET lft = lft - %s WHERE lft > %s', (self._diff, self.rgt))
-
-            cur.execute('UPDATE node SET rgt = rgt + %s WHERE lft > %s', (self._diff, parent_node.rgt))
+            # shift right
+            cur.execute('UPDATE node SET rgt = rgt + %s WHERE rgt >= %s', (self._diff, parent_node.rgt))
             cur.execute('UPDATE node SET lft = lft + %s WHERE lft > %s', (self._diff, parent_node.rgt))
 
-            cur.execute('UPDATE node SET rgt = rgt + %s WHERE id = %s', (self._diff, parent_id))
             cur.execute(
                 'UPDATE node SET lft = - lft + %s, rgt = - rgt + %s WHERE lft BETWEEN %s AND %s',
                 (parent_node.rgt - self.lft, parent_node.rgt - self.lft, -self.rgt, -self.lft)
@@ -110,5 +120,3 @@ class Node:
             'parent_id': self.parent_id,
             'children': children[0]
         }
-
-
