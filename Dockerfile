@@ -11,8 +11,6 @@ RUN apt-get update && apt-get install -y python3-dev libpq-dev
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 5000
+EXPOSE 8000
 
-ENV FLASK_APP="app"
-
-CMD flask run --host=0.0.0.0
+CMD ["gunicorn", "--bind=0.0.0.0:8000", "--workers=2", "app:create_app()"]
