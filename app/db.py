@@ -35,6 +35,7 @@ def init_db():
     
     db_conn.commit()
 
+
 @click.command('init-db')
 @with_appcontext
 def init_db_command():

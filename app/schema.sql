@@ -6,5 +6,7 @@ CREATE TABLE node (
     name TEXT NOT NULL,
     lft INTEGER NOT NULL,
     rgt INTEGER NOT NULL,
-    FOREIGN KEY (parent_id) REFERENCES node (id)
+    tree_id INTEGER,
+    FOREIGN KEY (parent_id) REFERENCES node (id),
+    UNIQUE (tree_id, name)
 );
