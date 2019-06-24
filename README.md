@@ -19,7 +19,7 @@ See OpenAPI specification: [app.swaggerhub.com](https://app.swaggerhub.com/apis-
     export FLASK_ENV=production
     export POSTGRES_PASSWORD=your_pass
     export POSTGRES_USER=your_user
-    export POSTGRES_USER=your_db
+    export POSTGRES_DB=your_db
 ```
 3. Initialize database: `docker-compose run --service-ports web flask init-db`
 
