@@ -24,7 +24,7 @@ See OpenAPI specification: [app.swaggerhub.com](https://app.swaggerhub.com/apis-
 4. Initialize database: `docker-compose run web flask init-db`
 
 
-Visit http://localhost:8888/hierarchy
+Visit http://localhost/hierarchy
 
 ## Implementation details
 
