@@ -4,8 +4,6 @@ services:
     build: .
     image: r4victor/hierarchy
     container_name: hierarchy
-    depends_on:
-      - postgres
     restart: always
     volumes:
       - ./app:/usr/src/hierarchy/app
@@ -17,7 +15,7 @@ services:
       - POSTGRES_DB
       - POSTGRES_PORT=5432
     ports:
-      - 8888:8000
+      - 8000:8000
   postgres:
     image: postgres
     restart: always
@@ -29,5 +27,12 @@ services:
       - POSTGRES_DB
     ports:
       - 5432:5432
+  nginx:
+    image: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - 80:80
+
 
     
