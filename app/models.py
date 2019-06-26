@@ -23,6 +23,10 @@ class Node:
     def get_root_id():
         return 1
 
+    @classmethod
+    def get_root_node(cls):
+        return cls.get_by_id(cls.get_root_id())
+
     @staticmethod
     def validate_name(name):
         if name == '':
@@ -35,14 +39,6 @@ class Node:
                 "digits, single spaces or any of: '_', '/', '\\'"
             )
 
-    @staticmethod
-    def check_name_uniqueness(name, tree_node_id):
-        pass
-
-    @classmethod
-    def _from_dict_cursor_result(cls, res):
-        return cls(**res)
-
     @classmethod
     def get_by_id(cls, id):
         with get_db_conn().cursor() as cur:
@@ -51,11 +47,18 @@ class Node:
         if res is None:
             return None
         return cls(**res)
+    
+    def to_item(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            # hide root node
+            'parent_id': self.parent_id if self.parent_id != self.get_root_id() else None
+        }
 
     @classmethod
     def create(cls, name, parent_node):
         cls.validate_name(name)
-    
         tree_id = parent_node.tree_id
         with get_db_conn().cursor() as cur:
             cur.execute('UPDATE node SET rgt = rgt + 2 WHERE rgt >= %s', (parent_node.rgt,))
@@ -74,14 +77,6 @@ class Node:
         get_db_conn().commit()
         return cls(node_id, name, parent_node.id, parent_node.rgt, parent_node.rgt + 1, tree_id)
 
-    def to_item(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            # hide root node
-            'parent_id': self.parent_id if self.parent_id != self.get_root_id() else None
-        }
-
     def rename(self, new_name):
         self.validate_name(new_name)
         with get_db_conn().cursor() as cur:
@@ -91,6 +86,17 @@ class Node:
                 raise ValueError('Names should be unique within a tree')
         get_db_conn().commit()
         return replace(self, name=new_name)
+    
+    def delete(self):
+        with get_db_conn().cursor() as cur:
+            cur.execute('DELETE FROM node WHERE lft BETWEEN %s AND %s', (self.lft, self.rgt))
+            cur.execute('UPDATE node SET lft = lft - %s WHERE lft > %s', (self._diff, self.rgt))
+            cur.execute('UPDATE node SET rgt = rgt - %s WHERE rgt > %s', (self._diff, self.rgt))
+        get_db_conn().commit()
+
+    @property
+    def _diff(self):
+        return self.rgt - self.lft + 1
 
     def move(self, parent_node):
         if self.id == parent_node.id:
@@ -128,26 +134,6 @@ class Node:
         get_db_conn().commit()
         return replace(self, parent_id=parent_node.id, tree_id=tree_id)
 
-    @property
-    def _diff(self):
-        return self.rgt - self.lft + 1
-
-    def delete(self):
-        with get_db_conn().cursor() as cur:
-            cur.execute('DELETE FROM node WHERE lft BETWEEN %s AND %s', (self.lft, self.rgt))
-            cur.execute('UPDATE node SET lft = lft - %s WHERE lft > %s', (self._diff, self.rgt))
-            cur.execute('UPDATE node SET rgt = rgt - %s WHERE rgt > %s', (self._diff, self.rgt))
-        get_db_conn().commit()
-
-    def _get_subtree_rows(self):
-        with get_db_conn().cursor() as cur:
-            cur.execute(
-                    'SELECT * FROM node WHERE lft >= %s and rgt <= %s ORDER BY lft ASC',
-                    (self.lft, self.rgt)
-            )
-            res = cur.fetchall()
-        return res
-
     def get_subtree(self):
         subtree_rows = self._get_subtree_rows()
         children = [[] for _ in range(len(subtree_rows))]
@@ -173,3 +159,16 @@ class Node:
             **self.to_item(),
             'children': children[0]
         }
+    
+    def _get_subtree_rows(self):
+        with get_db_conn().cursor() as cur:
+            cur.execute(
+                    'SELECT * FROM node WHERE lft >= %s and rgt <= %s ORDER BY lft ASC',
+                    (self.lft, self.rgt)
+            )
+            res = cur.fetchall()
+        return res
+
+    @classmethod
+    def get_hierarchy(cls):
+        return cls.get_root_node().get_subtree()['children']
