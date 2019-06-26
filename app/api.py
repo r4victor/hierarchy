@@ -15,69 +15,32 @@ def not_found_error(e):
     return api_message(404, 'Not found')
 
 
-@bp.route('/item', methods=('POST', 'PUT'))
+@bp.route('/item', methods=('POST',))
 def item():
     data = request.get_json()
-    if request.method == 'POST':
-        if 'name' not in data:
-            return api_message(400, '"name" required')
+    if 'name' not in data:
+        return api_message(400, '"name" required')
 
-        if 'parent_id' not in data:
-            return api_message(400, '"parent_id" required')
+    if 'parent_id' not in data:
+        return api_message(400, '"parent_id" required')
 
-        parent_id = data['parent_id']
-        if parent_id is None:
-            parent_id = Node.get_root_id()
+    parent_id = data['parent_id']
+    if parent_id is None:
+        parent_id = Node.get_root_id()
 
-        parent_node = Node.get_by_id(parent_id)
-        if parent_node is None:
-            return api_message(400, 'Invalid "parent_id"')
+    parent_node = Node.get_by_id(parent_id)
+    if parent_node is None:
+        return api_message(400, 'Invalid "parent_id"')
 
-        try:
-            node = Node.create(name=data['name'], parent_node=parent_node)
-        except ValueError as e:
-            return api_message(400, str(e))
-        
-        return '', 201, {'Location': url_for('.item_by_id', item_id=node.id)}
+    try:
+        node = Node.create(name=data['name'], parent_node=parent_node)
+    except ValueError as e:
+        return api_message(400, str(e))
     
-    if request.method == 'PUT':
-        if 'id' not in data:
-            return api_message(400, '"id" required')
-
-        node = Node.get_by_id(data['id'])
-        if node is None:
-            return api_message(404, 'Item not found')
-
-        if 'name' not in data:
-            return api_message(400, '"name" required')
-
-        if 'parent_id' not in data:
-            return api_message(400, '"parent_id reqired"')
-    
-        if data['name'] != node.name:
-            try:
-                node = node.rename(data['name'])
-            except ValueError as e:
-                return api_message(400, str(e))
-
-        parent_id = data['parent_id']
-        if parent_id is None:
-            parent_id = Node.get_root_id()
-        
-        if parent_id != node.parent_id:
-            parent_node = Node.get_by_id(parent_id)
-            if parent_node is None:
-                return api_message(400, 'Parent item not found')
-
-            try:
-                node = node.move(parent_node)
-            except ValueError as e:
-                return api_message(400, str(e))
-
-        return jsonify(node.to_item())
+    return '', 201, {'Location': url_for('.item_by_id', item_id=node.id)}
 
 
-@bp.route('/item/<int:item_id>', methods=('GET', 'PATCH', 'DELETE'))
+@bp.route('/item/<int:item_id>', methods=('GET', 'POST', 'DELETE'))
 def item_by_id(item_id):
     # disallow direct access to the root node
     if item_id == Node.get_root_id():
@@ -94,7 +57,7 @@ def item_by_id(item_id):
         node.delete()
         return '', 204
 
-    if request.method == 'PATCH':
+    if request.method == 'POST':
         data = request.get_json()
 
         node = Node.get_by_id(item_id)
@@ -121,7 +84,6 @@ def item_by_id(item_id):
                     node = node.move(parent_node)
                 except ValueError as e:
                     return api_message(400, str(e))
-        
         return jsonify(node.to_item())
 
 

@@ -5,10 +5,8 @@ info:
     # A service for managing hierarchical structure
     
     ## Overview
-    This service provides an API for working with a set of items by forming an hierarchy. Hierarchy is represented by a collection of trees.
-    Each item within a tree has a unique name and points to its parent ( which is 'null' in case of a root item).
-    One can create, rename, move and delete items within the hierarchy.
-  version: "0.1.0"
+    This service provides an API for working with a set of items by forming an hierarchy. Hierarchy is represented by a collection of trees. Each item within a tree has a unique name and points to its parent (which is 'null' in case of a root item). One can create, rename, move and delete items within the hierarchy.
+  version: "0.2.0"
 
 tags:
   - name: "items"
@@ -42,36 +40,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-    put:
-      tags:
-        - "items"
-      summary: "Replace an existing item"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Item"
-      responses:
-        "200":
-          description: "Successful replacement"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Item"
-        "400":
-          description: "Invalid parameters"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "404":
-          description: "Item not found"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-
   /item/{item_id}:
     get:
       tags:
@@ -97,7 +65,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-    patch:
+    post:
       tags:
         - "items"
       summary: "Update an item"
@@ -255,3 +223,7 @@ components:
       description: "Represents a collection of trees"
       items:
         $ref: "#/components/schemas/Node"
+        
+        
+      
+    
