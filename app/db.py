@@ -1,3 +1,5 @@
+import time
+
 import psycopg2.extras
 import click
 from flask import current_app, g
@@ -6,14 +8,24 @@ from flask.cli import with_appcontext
 
 def get_db_conn():
     if 'db_conn' not in g:
-        g.db_conn = psycopg2.connect(
-            dbname=current_app.config['POSTGRES_DB'],
-            user=current_app.config['POSTGRES_USER'],
-            password=current_app.config['POSTGRES_PASSWORD'],
-            host='postgres',
-            port=current_app.config['POSTGRES_PORT'],
-            cursor_factory=psycopg2.extras.DictCursor,
-        )
+        tries = 5
+        while tries > 0:
+            try:
+                g.db_conn = psycopg2.connect(
+                    dbname=current_app.config['POSTGRES_DB'],
+                    user=current_app.config['POSTGRES_USER'],
+                    password=current_app.config['POSTGRES_PASSWORD'],
+                    host='postgres',
+                    port=current_app.config['POSTGRES_PORT'],
+                    cursor_factory=psycopg2.extras.DictCursor,
+                )
+            except psycopg2.OperationalError:
+                time.sleep(1)
+                tries -= 1
+            else:
+                break
+        else:
+            raise RuntimeError('Could not connect to postgres')
 
     return g.db_conn
 
